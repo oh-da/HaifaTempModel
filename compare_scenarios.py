@@ -409,6 +409,10 @@ class ReportWriter:
         self.f_num = f({"border": 1, "num_format": "#,##0.0"})
         self.f_num_base = f({"border": 1, "num_format": "#,##0.0", "bg_color": "#F2F2F2"})
         self.f_diff = f({"border": 1, "num_format": "[Blue]#,##0.0;[Red]-#,##0.0;#,##0.0"})
+        # 'precise' variants: up to 3 decimals, for ratio tables
+        self.f_num3 = f({"border": 1, "num_format": "#,##0.0##"})
+        self.f_num3_base = f({"border": 1, "num_format": "#,##0.0##", "bg_color": "#F2F2F2"})
+        self.f_diff3 = f({"border": 1, "num_format": "[Blue]#,##0.0##;[Red]-#,##0.0##;#,##0.0##"})
         self.f_pct = f({"border": 1, "num_format": "[Blue]0.0%;[Red]-0.0%;0.0%"})
         self.f_sect = f({"bold": True, "font_size": 12, "font_color": "#1F4E79"})
 
@@ -419,7 +423,8 @@ class ReportWriter:
         return self.wb.add_worksheet(name[:31])
 
     def write_comparison(self, ws, df_base, df_upd, key_cols, title=None,
-                         start_row=0, pct=True, val_cols=None, key_widths=None):
+                         start_row=0, pct=True, val_cols=None, key_widths=None,
+                         precise=False):
         """Side-by-side comparison table: for every value column write
         base / updated / diff (/ %diff) sub-columns."""
         if val_cols is None:
@@ -448,6 +453,10 @@ class ReportWriter:
             for j, s in enumerate(sub):
                 ws.write(r0 + 1, c + j, s, self.f_subhead)
             c += nsub
+        f_base = self.f_num3_base if precise else self.f_num_base
+        f_num = self.f_num3 if precise else self.f_num
+        f_diff = self.f_diff3 if precise else self.f_diff
+
         # data
         def write_val(rr, cc, v, fmt):
             if v is None or (isinstance(v, float) and not math.isfinite(v)):
@@ -466,9 +475,9 @@ class ReportWriter:
                 vb = np.nan if pd.isna(vb) else float(vb)
                 vu = np.nan if pd.isna(vu) else float(vu)
                 diff = vu - vb if not (pd.isna(vb) or pd.isna(vu)) else np.nan
-                write_val(r, c, vb, self.f_num_base)
-                write_val(r, c + 1, vu, self.f_num)
-                write_val(r, c + 2, diff, self.f_diff)
+                write_val(r, c, vb, f_base)
+                write_val(r, c + 1, vu, f_num)
+                write_val(r, c + 2, diff, f_diff)
                 if pct:
                     p = diff / vb if diff == diff and vb != 0.0 else np.nan
                     write_val(r, c + 3, p, self.f_pct)
@@ -559,6 +568,115 @@ def zone_totals_frame(store: MatrixStore, period: str, stems):
             df[f"{lab} Dest"] = m.sum(axis=0)
         out = df if out is None else out.merge(df, on="Zone", how="outer")
     return out
+
+
+TOUR_PURPOSES = {"W": "Work", "E": "Education", "O": "Other"}
+
+
+def tours_summary(store: MatrixStore, taz: pd.DataFrame) -> pd.DataFrame:
+    """Tour totals, trips-per-tour and tours-per-capita headline measures.
+
+    Tours: mat/tours/Tour_5 = all daily tours by exit period (period 0-4);
+    AutoObjective_3 / TransitObjective_3 split the same tours by mode and
+    purpose (their sum equals the Tour_5 total). Auto_5/Transit_5 count each
+    tour twice (exit & return leg) and are therefore not used for totals.
+    Trips: mat/<period>/Demand5 = trips of the 4 modelled periods only
+    (AM/OP/PM/NE) - the model does not output trip matrices for period 0,
+    so 'trips per tour' relates modelled-period trips to all daily tours.
+    """
+    def tot(period, stem, labels=None):
+        return sum(float(m.sum()) for (p, s, lab), m in store.mats.items()
+                   if p == period and s == stem and (labels is None or lab in labels))
+
+    trips_by_period = {p: tot(p, "Demand5") for p in PERIOD_ORDER}
+    trips_total = sum(trips_by_period.values())
+    auto_trips = sum(tot(p, "Demand5", {"Driver", "Passenger"}) for p in PERIOD_ORDER)
+    transit_trips = sum(tot(p, "Demand5", {"Transit", "P&R", "K&R"}) for p in PERIOD_ORDER)
+
+    tours_total = tot("tours", "Tour")
+    auto_tours = tot("tours", "AutoObjective")
+    transit_tours = tot("tours", "TransitObjective")
+    purpose_tours = {name: tot("tours", "AutoObjective", {f"Auto_{k}"})
+                     + tot("tours", "TransitObjective", {f"Trns_{k}"})
+                     for k, name in TOUR_PURPOSES.items()}
+    population = float(taz["population"].sum())
+
+    def ratio(a, b):
+        return a / b if b else np.nan
+
+    rows = [("Trips " + p + " (Demand5, all modes)", trips_by_period[p]) for p in PERIOD_ORDER]
+    rows += [
+        ("Trips total, modelled periods", trips_total),
+        ("  Auto trips (Driver + Passenger)", auto_trips),
+        ("  Transit trips (Transit + P&R + K&R)", transit_trips),
+        ("Tours total, all day (Tour_5)", tours_total),
+        ("  Auto tours (AutoObjective)", auto_tours),
+        ("  Transit tours (TransitObjective)", transit_tours),
+        ("  Work tours", purpose_tours["Work"]),
+        ("  Education tours", purpose_tours["Education"]),
+        ("  Other tours", purpose_tours["Other"]),
+        ("Trips per tour (modelled-period trips / all-day tours)",
+         ratio(trips_total, tours_total)),
+        ("  Auto trips per auto tour", ratio(auto_trips, auto_tours)),
+        ("  Transit trips per transit tour", ratio(transit_trips, transit_tours)),
+        ("Population (TAZ_North3)", population),
+        ("Tours per capita", ratio(tours_total, population)),
+        ("  Auto tours per capita", ratio(auto_tours, population)),
+        ("  Transit tours per capita", ratio(transit_tours, population)),
+        ("  Work tours per capita", ratio(purpose_tours["Work"], population)),
+        ("  Education tours per capita", ratio(purpose_tours["Education"], population)),
+        ("  Other tours per capita", ratio(purpose_tours["Other"], population)),
+    ]
+    return pd.DataFrame(rows, columns=["Measure", "Value"])
+
+
+def tours_per_capita_by_superzone(store: MatrixStore, taz: pd.DataFrame,
+                                  sz_of_zone: dict) -> pd.DataFrame:
+    """Per-superZone tours (by origin = home zone), population and ratios."""
+    zones = store.zones[("tours", "Tour")]
+    groups = [str(sz_of_zone.get(z, "EXT")) for z in zones]
+
+    def orig_sums(stem, labels=None):
+        out = np.zeros(len(zones))
+        for (p, s, lab), m in store.mats.items():
+            if p == "tours" and s == stem and (labels is None or lab in labels):
+                out += m.sum(axis=1)
+        return out
+
+    df = pd.DataFrame({"SuperZone": groups,
+                       "Tours": orig_sums("Tour"),
+                       "Auto tours": orig_sums("AutoObjective"),
+                       "Transit tours": orig_sums("TransitObjective"),
+                       "Work tours": orig_sums("AutoObjective", {"Auto_W"})
+                       + orig_sums("TransitObjective", {"Trns_W"}),
+                       "Education tours": orig_sums("AutoObjective", {"Auto_E"})
+                       + orig_sums("TransitObjective", {"Trns_E"}),
+                       "Other tours": orig_sums("AutoObjective", {"Auto_O"})
+                       + orig_sums("TransitObjective", {"Trns_O"})})
+    agg = df.groupby("SuperZone", as_index=False).sum()
+    pop = (taz.assign(SuperZone=taz["superZone"].astype(int).astype(str))
+           .groupby("SuperZone", as_index=False)["population"].sum()
+           .rename(columns={"population": "Population"}))
+    agg = agg.merge(pop, on="SuperZone", how="left")
+    total = agg.drop(columns="SuperZone").sum()
+    total["SuperZone"] = "TOTAL"
+    agg = pd.concat([agg, total.to_frame().T], ignore_index=True)
+    agg = agg.sort_values(
+        "SuperZone",
+        key=lambda s: s.map(lambda x: int(x) if str(x).isdigit()
+                            else (9998 if x == "EXT" else 9999)),
+        ignore_index=True)
+    for col in ["Tours", "Auto tours", "Transit tours",
+                "Work tours", "Education tours", "Other tours"]:
+        with np.errstate(divide="ignore", invalid="ignore"):
+            agg[f"{col} per capita"] = np.where(
+                agg["Population"].astype(float) > 0,
+                agg[col].astype(float) / agg["Population"].astype(float), np.nan)
+    cols = (["SuperZone", "Population", "Tours", "Tours per capita"]
+            + [c for base in ["Auto tours", "Transit tours", "Work tours",
+                              "Education tours", "Other tours"]
+               for c in (base, f"{base} per capita")])
+    return agg[cols]
 
 
 def superzone_matrix(store: MatrixStore, period: str, stem: str, label: str,
@@ -719,6 +837,35 @@ def main():
             else:
                 ws.write(4 + j, c0 + k, v, w.f_num)
     ws.set_column(c0, c0 + 1, 18)
+
+    # ---- tours analysis --------------------------------------------------------
+    ws = w.sheet("Tours Analysis")
+    ws.write(0, 0, "Tours vs trips - trips per tour and tours per capita", w.f_title)
+    tours_notes = [
+        "mat/tours matrices are TOURS (whole day): Tour_5 = all tours by exit period "
+        "(0-4); AutoObjective_3/TransitObjective_3 split the same tours by mode and "
+        "purpose (Work/Education/Other) - their sum equals the Tour_5 total.",
+        "Auto_5/Transit_5 count every tour twice (exit leg + return leg) and are "
+        "therefore not used for the totals below.",
+        "Trip matrices (mat/<period>/Demand5) exist only for the 4 modelled periods "
+        "(AM/OP/PM/NE), so 'trips per tour' relates modelled-period trips to all-day "
+        "tours - a full-day trip rate would be roughly 2 trips per tour.",
+    ]
+    for i, n in enumerate(tours_notes):
+        ws.write(1 + i, 0, n, w.f_note)
+    w.write_comparison(ws, tours_summary(store_b, taz_b), tours_summary(store_u, taz_u),
+                       ["Measure"], start_row=5, precise=True,
+                       key_widths=[52])
+
+    ws = w.sheet("Tours per Capita by SZ")
+    ws.write(0, 0, "Tours per capita by superZone (tour origin = home zone; "
+                   "population from TAZ_North3.csv)", w.f_title)
+    ws.write(1, 0, "EXT = external zones 51-88 (no population, so no per-capita value).",
+             w.f_note)
+    w.write_comparison(ws,
+                       tours_per_capita_by_superzone(store_b, taz_b, sz_of_zone),
+                       tours_per_capita_by_superzone(store_u, taz_u, sz_of_zone),
+                       ["SuperZone"], start_row=3, precise=True)
 
     # ---- TAZ ---------------------------------------------------------------------
     num_cols = [c for c in taz_b.columns if c != "TAZ" and pd.api.types.is_numeric_dtype(taz_b[c])]
