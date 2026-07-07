@@ -669,11 +669,17 @@ def main():
     # ---- Inventory ----------------------------------------------------------
     ws = w.sheet("File Inventory")
     ws.write(0, 0, "File inventory (md5 comparison of raw/ contents)", w.f_title)
-    notes = [
-        "CentroidGroup.in and TAZ_North3.csv are identical in both scenarios.",
-        "TransitCapacity.in differs only in header timestamps (data values compared in its sheet).",
-        f"PeriodZone.csv exists only in raw/{args.base} (see 'PeriodZone (base only)' sheet).",
-    ]
+    identical = [f for f, s in zip(inv["File"], inv["Status"])
+                 if s == "identical" and "/" not in f]
+    one_sided = [f"{f} ({s})" for f, s in zip(inv["File"], inv["Status"])
+                 if s.startswith("only in")]
+    notes = []
+    if identical:
+        notes.append("Identical top-level input files: " + ", ".join(identical) + ".")
+    if one_sided:
+        notes.append("Files present in only one scenario: " + ", ".join(one_sided) + ".")
+    notes.append("Note: TransitCapacity.in header contains run timestamps, so it can show as "
+                 "DIFFERS even when all data values match (see its sheet).")
     for i, n in enumerate(notes):
         ws.write(1 + i, 0, n, w.f_note)
     hr = 5
@@ -733,14 +739,32 @@ def main():
     ws.write(0, 0, "TransitCapacity.in - per-zone transit capacity by period", w.f_title)
     w.write_comparison(ws, cap_b, cap_u, ["Zone"], start_row=2)
 
-    # ---- PeriodZone (base only) -------------------------------------------------------
-    pz_path = base_dir / "PeriodZone.csv"
-    if pz_path.exists():
-        pz = pd.read_csv(pz_path)
-        agg = (pz.groupby(["perodFrom", "periodTo"], as_index=False)[["Auto", "Transit"]]
-               .sum().rename(columns={"perodFrom": "Period from", "periodTo": "Period to"}))
-        ws = w.sheet("PeriodZone (base only)")
-        ws.write(0, 0, f"PeriodZone.csv exists only in raw/{args.base} - no comparison possible.",
+    # ---- PeriodZone -----------------------------------------------------------------
+    pz_b_path, pz_u_path = base_dir / "PeriodZone.csv", upd_dir / "PeriodZone.csv"
+    pz_keys = ["perodFrom", "periodTo", "zoneFrom", "zoneTo"]
+
+    def pz_summary(pz):
+        return (pz.groupby(["perodFrom", "periodTo"], as_index=False)[["Auto", "Transit"]]
+                .sum().rename(columns={"perodFrom": "Period from", "periodTo": "Period to"}))
+
+    if pz_b_path.exists() and pz_u_path.exists():
+        pz_b, pz_u = pd.read_csv(pz_b_path), pd.read_csv(pz_u_path)
+        ws = w.sheet("PeriodZone Summary")
+        ws.write(0, 0, "PeriodZone.csv - super-zone demand, totals by period pair", w.f_title)
+        w.write_comparison(ws, pz_summary(pz_b), pz_summary(pz_u),
+                           ["Period from", "Period to"], start_row=2)
+        ws = w.sheet("PeriodZone Detail")
+        ws.write(0, 0, "PeriodZone.csv - full zone-pair comparison "
+                       f"({len(pz_b)} rows in {args.base}, {len(pz_u)} rows in {args.updated}; "
+                       "blank = row missing in that scenario)", w.f_title)
+        w.write_comparison(ws, pz_b, pz_u, pz_keys, start_row=2)
+        print(f"  wrote PeriodZone comparison ({len(pz_b)} vs {len(pz_u)} rows)")
+    elif pz_b_path.exists() or pz_u_path.exists():
+        only_dir, pz_path = ((args.base, pz_b_path) if pz_b_path.exists()
+                             else (args.updated, pz_u_path))
+        agg = pz_summary(pd.read_csv(pz_path))
+        ws = w.sheet(f"PeriodZone ({only_dir} only)")
+        ws.write(0, 0, f"PeriodZone.csv exists only in raw/{only_dir} - no comparison possible.",
                  w.f_title)
         ws.write(1, 0, "Totals by period pair (super-zone level demand):", w.f_note)
         for i, c in enumerate(agg.columns):
