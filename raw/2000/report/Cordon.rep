@@ -1,0 +1,88 @@
+2000:AM: 2019 Base V0.9_20260520_0954
+Trips@Car@Public transport
+Driver+Passenger/Transit@379463.312@101813.718
+P&R+K&R+Back@0@8524.76757
+Total@379463.312@110338.484
+  Inner@367550.5@104779.39
+  External@11912.8125@5559.09375
+Transit Demand@Total@Inner
+       Transit Users+L_Bus@98877.4062@93473.8046
+       Walk Only-L_Bus@11462.416@11306.7724
+@Pass*Km@Pass*Hour@1.566779
+   Metropolin, Total@9667255@361841.625
+       Auto@7770285@292769.406
+       Transit@1896970.25@69072.2109
+   Metropolin Center@145691.75@11513.3935
+       Auto@82781.1718@8645.68457
+       Transit@62910.5703@2867.70874
+Driver, Total@4959399@186860.437
+Passenger ON Cordon Lines@To Haifa@From Haifa
+   KISHON@94056.0312@71797.664
+   MIFRATZ@125844.484@64324.625
+   GAL'IN@30214.3359@27041.0214
+2000:OP: 2019 Base V0.9_20260520_0954
+Trips@Car@Public transport
+Driver+Passenger/Transit@193951.593@68704.9609
+P&R+K&R+Back@0@4159.68408
+Total@193951.593@72864.6484
+  Inner@188802.265@70298.7343
+  External@5149.32812@2565.90625
+Transit Demand@Total@Inner
+       Transit Users+L_Bus@65939.9843@63399.5625
+       Walk Only-L_Bus@7191.92285@7129.47265
+@Pass*Km@Pass*Hour@1.501321
+   Metropolin, Total@5023200@130932.828
+       Auto@3937764@95303.0859
+       Transit@1085436.25@35629.746
+   Metropolin Center@70452.8671@4127.08251
+       Auto@38581.3632@2464.69702
+       Transit@31871.5019@1662.38513
+Driver, Total@2622869.75@63479.9492
+Passenger ON Cordon Lines@To Haifa@From Haifa
+   KISHON@35608.0742@50326.4921
+   MIFRATZ@49348.0117@36234.2148
+   GAL'IN@15800.5449@16397.6738
+2000:PM: 2019 Base V0.9_20260520_0954
+Trips@Car@Public transport
+Driver+Passenger/Transit@347922.875@85925.4765
+P&R+K&R+Back@0@8229.24511
+Total@347922.875@94154.7187
+  Inner@337828.812@88481.9453
+  External@10094.0625@5672.77343
+Transit Demand@Total@Inner
+       Transit Users+L_Bus@87441.4609@81762.4218
+       Walk Only-L_Bus@7956.70068@7822.72851
+@Pass*Km@Pass*Hour@1.370153
+   Metropolin, Total@9237474@374484.156
+       Auto@7490196.5@310827.656
+       Transit@1747277.25@63656.496
+   Metropolin Center@134402.843@13138.2265
+       Auto@78712.8203@10487.0546
+       Transit@55690.0312@2651.17211
+Driver, Total@5466668.5@226855.953
+Passenger ON Cordon Lines@To Haifa@From Haifa
+   KISHON@62233.664@103390.937
+   MIFRATZ@96973.6718@82936.914
+   GAL'IN@27051.207@28699.2265
+2000:NE: 2019 Base V0.9_20260520_0954
+Trips@Car@Public transport
+Driver+Passenger/Transit@254377.609@34865.2421
+P&R+K&R+Back@0@6217.35449
+Total@254377.609@41082.5976
+  Inner@248687.562@37639.664
+  External@5690.04687@3442.93359
+Transit Demand@Total@Inner
+       Transit Users+L_Bus@38128.7187@34612.9765
+       Walk Only-L_Bus@4322.42382@4242.3872
+@Pass*Km@Pass*Hour@1.275745
+   Metropolin, Total@5953518@180939.031
+       Auto@5209106@157679.234
+       Transit@744411.875@23259.7968
+   Metropolin Center@74356.8515@4998.50537
+       Auto@50100.5117@3999.19384
+       Transit@24256.3417@999.311523
+Driver, Total@4083222.25@123598.203
+Passenger ON Cordon Lines@To Haifa@From Haifa
+   KISHON@38292.6914@60264.2226
+   MIFRATZ@60075.3203@41220.4218
+   GAL'IN@18254.125@20127.205

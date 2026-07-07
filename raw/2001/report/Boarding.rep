@@ -1,0 +1,136 @@
+2001:AM: 2019 Base V0.9_20260601_1223
+@Train@Carmelit@Cable Car@LRT@Bus@SHERUT@MATRONIT
+Train_users@16918.0546
+  Boarding@18779.8@193.1@939.2@.0@17253.4@.0@810.8
+  Initial_boarding@9851.4@9.9@98.5@.0@6787.9@.0@170.5
+  Final_alighting@6886.5@183.2@509.3@.0@8821.9@.0@517.1
+Carmelit_users@705.447509
+  Boarding@202.3@705.4@.0@.0@111.0@.0@228.4
+  Initial_boarding@158.3@306.9@.0@.0@74.6@.0@165.8
+  Final_alighting@3.7@632.3@.0@.0@30.7@.0@38.8
+Cable_car_users@2601.59985
+  Boarding@957.2@.0@2601.6@.0@2585.8@.0@432.5
+  Initial_boarding@451.8@.0@563.9@.0@1271.8@.0@314.1
+  Final_alighting@133.1@.0@1156.6@.0@1210.0@.0@102.0
+LRT_users@0
+  Boarding@.0@.0@.0@.0@.0@.0@.0
+  Initial_boarding@.0@.0@.0@.0@.0@.0@.0
+  Final_alighting@.0@.0@.0@.0@.0@.0@.0
+Bus_users@90853.5937
+  Boarding@14029.7@105.3@1861.8@.0@126821.8@.0@3848.0
+  Initial_boarding@5671.6@29.0@379.4@.0@83046.3@.0@1727.3
+  Final_alighting@3444.9@74.2@531.7@.0@85052.8@.0@1750.3
+SHERUT_users@0
+  Boarding@.0@.0@.0@.0@.0@.0@.0
+  Initial_boarding@.0@.0@.0@.0@.0@.0@.0
+  Final_alighting@.0@.0@.0@.0@.0@.0@.0
+MATRONIT_users@9072.80175
+  Boarding@832.9@228.4@432.5@.0@4208.0@.0@9089.4
+  Initial_boarding@479.4@43.0@56.2@.0@2013.0@.0@6481.3
+  Final_alighting@59.4@183.3@243.5@.0@2064.7@.0@6521.9
+L_Bus_users@0@L_Bus_Only@.0
+  Boarding@.0@.0@.0@.0@.0@.0@.0
+  Initial_boarding@.0@.0@.0@.0@.0@.0@.0
+  Final_alighting@.0@.0@.0@.0@.0@.0@.0
+2001:OP: 2019 Base V0.9_20260601_1223
+@Train@Carmelit@Cable Car@LRT@Bus@SHERUT@MATRONIT
+Train_users@5350.67919
+  Boarding@5759.8@8.3@207.0@.0@5419.9@.0@54.2
+  Initial_boarding@3490.7@.0@62.9@.0@1776.6@.0@20.5
+  Final_alighting@2146.1@8.3@76.2@.0@3092.2@.0@27.9
+Carmelit_users@121.499595
+  Boarding@8.8@121.5@.0@.0@32.1@.0@8.9
+  Initial_boarding@7.2@98.8@.0@.0@9.6@.0@5.8
+  Final_alighting@.0@96.7@.0@.0@21.8@.0@2.9
+Cable_car_users@811.149536
+  Boarding@207.8@.0@811.2@.0@803.2@.0@33.3
+  Initial_boarding@83.6@.0@337.5@.0@373.1@.0@16.9
+  Final_alighting@50.5@.0@353.9@.0@391.4@.0@15.4
+LRT_users@0
+  Boarding@.0@.0@.0@.0@.0@.0@.0
+  Initial_boarding@.0@.0@.0@.0@.0@.0@.0
+  Final_alighting@.0@.0@.0@.0@.0@.0@.0
+Bus_users@62081.6875
+  Boarding@4303.4@31.0@627.2@.0@87279.0@.0@1235.2
+  Initial_boarding@2150.8@21.3@225.6@.0@58978.3@.0@705.8
+  Final_alighting@847.0@9.2@223.0@.0@60504.7@.0@497.8
+SHERUT_users@0
+  Boarding@.0@.0@.0@.0@.0@.0@.0
+  Initial_boarding@.0@.0@.0@.0@.0@.0@.0
+  Final_alighting@.0@.0@.0@.0@.0@.0@.0
+MATRONIT_users@3424.71166
+  Boarding@55.2@8.9@33.3@.0@1302.4@.0@3424.8
+  Initial_boarding@26.1@2.9@14.9@.0@523.5@.0@2857.4
+  Final_alighting@4.8@5.8@15.6@.0@737.3@.0@2661.1
+L_Bus_users@0@L_Bus_Only@.0
+  Boarding@.0@.0@.0@.0@.0@.0@.0
+  Initial_boarding@.0@.0@.0@.0@.0@.0@.0
+  Final_alighting@.0@.0@.0@.0@.0@.0@.0
+2001:PM: 2019 Base V0.9_20260601_1223
+@Train@Carmelit@Cable Car@LRT@Bus@SHERUT@MATRONIT
+Train_users@14129.3818
+  Boarding@15197.2@130.0@915.4@.0@15177.0@.0@584.2
+  Initial_boarding@8803.0@32.6@268.8@.0@4897.7@.0@127.2
+  Final_alighting@4697.3@90.9@210.6@.0@8789.2@.0@341.2
+Carmelit_users@644.462646
+  Boarding@136.2@644.4@.0@.0@200.1@.0@217.5
+  Initial_boarding@74.4@402.2@.0@.0@72.2@.0@95.8
+  Final_alighting@7.3@425.3@.0@.0@113.0@.0@98.8
+Cable_car_users@2300.7788
+  Boarding@928.7@.0@2300.7@.0@2005.4@.0@631.9
+  Initial_boarding@354.9@.0@907.8@.0@950.4@.0@87.6
+  Final_alighting@159.3@.0@646.0@.0@983.0@.0@512.4
+LRT_users@0
+  Boarding@.0@.0@.0@.0@.0@.0@.0
+  Initial_boarding@.0@.0@.0@.0@.0@.0@.0
+  Final_alighting@.0@.0@.0@.0@.0@.0@.0
+Bus_users@79480.8046
+  Boarding@11634.4@185.2@1510.7@.0@110664.1@.0@4265.1
+  Initial_boarding@5573.2@105.4@318.1@.0@71971.3@.0@1512.9
+  Final_alighting@1707.9@72.2@315.5@.0@75037.8@.0@2347.2
+SHERUT_users@0
+  Boarding@.0@.0@.0@.0@.0@.0@.0
+  Initial_boarding@.0@.0@.0@.0@.0@.0@.0
+  Final_alighting@.0@.0@.0@.0@.0@.0@.0
+MATRONIT_users@9682.27148
+  Boarding@598.1@217.5@631.9@.0@4716.2@.0@9698.9
+  Initial_boarding@246.2@113.6@369.4@.0@2637.4@.0@6315.7
+  Final_alighting@34.5@102.8@50.4@.0@1901.5@.0@7593.1
+L_Bus_users@0@L_Bus_Only@.0
+  Boarding@.0@.0@.0@.0@.0@.0@.0
+  Initial_boarding@.0@.0@.0@.0@.0@.0@.0
+  Final_alighting@.0@.0@.0@.0@.0@.0@.0
+2001:NE: 2019 Base V0.9_20260601_1223
+@Train@Carmelit@Cable Car@LRT@Bus@SHERUT@MATRONIT
+Train_users@6078.64208
+  Boarding@6483.8@28.5@289.5@.0@5674.8@.0@177.5
+  Initial_boarding@4285.0@1.0@66.0@.0@1689.1@.0@37.6
+  Final_alighting@2386.2@27.5@84.1@.0@3487.5@.0@93.4
+Carmelit_users@148.391479
+  Boarding@30.6@148.4@.0@.0@36.7@.0@16.6
+  Initial_boarding@24.2@100.6@.0@.0@14.6@.0@9.0
+  Final_alighting@.3@120.6@.0@.0@20.7@.0@6.8
+Cable_car_users@884.41986
+  Boarding@292.2@.0@884.4@.0@847.7@.0@80.5
+  Initial_boarding@144.3@.0@364.5@.0@350.2@.0@25.5
+  Final_alighting@56.2@.0@308.1@.0@468.3@.0@51.9
+LRT_users@0
+  Boarding@.0@.0@.0@.0@.0@.0@.0
+  Initial_boarding@.0@.0@.0@.0@.0@.0@.0
+  Final_alighting@.0@.0@.0@.0@.0@.0@.0
+Bus_users@34799.8554
+  Boarding@4541.4@35.2@615.4@.0@48645.3@.0@1148.7
+  Initial_boarding@2495.9@20.4@176.0@.0@31530.9@.0@576.7
+  Final_alighting@692.1@14.5@126.8@.0@33504.3@.0@462.1
+SHERUT_users@0
+  Boarding@.0@.0@.0@.0@.0@.0@.0
+  Initial_boarding@.0@.0@.0@.0@.0@.0@.0
+  Final_alighting@.0@.0@.0@.0@.0@.0@.0
+MATRONIT_users@3023.72656
+  Boarding@180.6@16.6@80.5@.0@1274.3@.0@3024.7
+  Initial_boarding@89.3@7.2@50.5@.0@539.6@.0@2337.1
+  Final_alighting@15.7@9.0@15.8@.0@684.3@.0@2299.0
+L_Bus_users@0@L_Bus_Only@.0
+  Boarding@.0@.0@.0@.0@.0@.0@.0
+  Initial_boarding@.0@.0@.0@.0@.0@.0@.0
+  Final_alighting@.0@.0@.0@.0@.0@.0@.0
