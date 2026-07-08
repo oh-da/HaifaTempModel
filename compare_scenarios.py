@@ -7,7 +7,10 @@ update, 2001 = after data update) and writes Excel comparison workbooks:
 
   comparison/Comparison_Report.xlsx  - summary, file inventory, all report
                                        tables (Trip/Car/Transit/Boarding/
-                                       Cordon), matrix totals, input files.
+                                       Cordon), matrix totals, input files,
+                                       super-zone (SZ_new) analysis: motor-
+                                       ization, transit boardings, passengers
+                                       per car and mode totals.
   comparison/Matrix_Details.xlsx     - per-zone origin/destination totals for
                                        every demand matrix and every period,
                                        plus super-zone O/D matrices for the
@@ -679,6 +682,88 @@ def tours_per_capita_by_superzone(store: MatrixStore, taz: pd.DataFrame,
     return agg[cols]
 
 
+def sz_sort_key(s: pd.Series):
+    """Numeric super zones first, then EXT, then TOTAL."""
+    return s.map(lambda x: int(x) if str(x).isdigit() else (9998 if x == "EXT" else 9999))
+
+
+def sz_new_map(taz: pd.DataFrame) -> dict:
+    return {str(int(r.TAZ)): str(int(r.SZ_new)) for r in taz.itertuples()}
+
+
+def add_total_row(df: pd.DataFrame, key_col: str = "SuperZone") -> pd.DataFrame:
+    total = df.drop(columns=key_col).sum(numeric_only=True)
+    total[key_col] = "TOTAL"
+    return pd.concat([df, total.to_frame().T], ignore_index=True)
+
+
+def sz_motorization(taz: pd.DataFrame) -> pd.DataFrame:
+    agg = (taz.assign(SuperZone=taz["SZ_new"].astype(int).astype(str))
+           .groupby("SuperZone", as_index=False)[["population", "car"]].sum()
+           .rename(columns={"population": "Population", "car": "Cars"}))
+    agg = add_total_row(agg)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        agg["Motorization (cars/1000 pop)"] = np.where(
+            agg["Population"].astype(float) > 0,
+            agg["Cars"].astype(float) / agg["Population"].astype(float) * 1000.0,
+            np.nan)
+    return agg.sort_values("SuperZone", key=sz_sort_key, ignore_index=True)
+
+
+def demand5_origin_by_sz(store: MatrixStore, labels, sz_map: dict) -> pd.DataFrame:
+    """SuperZone (SZ_new) x period origin sums of the Demand5 matrices in `labels`."""
+    out = {}
+    for period in PERIOD_ORDER:
+        zones = store.zones.get((period, "Demand5"))
+        if zones is None:
+            continue
+        tot = np.zeros(len(zones))
+        for lab in labels:
+            m = store.mats.get((period, "Demand5", lab))
+            if m is not None:
+                tot += m.sum(axis=1)
+        out[period] = pd.Series(tot).groupby(
+            pd.Series([sz_map.get(z, "EXT") for z in zones])).sum()
+    df = pd.DataFrame(out).fillna(0.0)
+    df.index.name = "SuperZone"
+    return df.reset_index()
+
+
+def sz_transit_boardings(store: MatrixStore, sz_map: dict) -> pd.DataFrame:
+    df = demand5_origin_by_sz(store, ["Transit", "P&R", "K&R"], sz_map)
+    periods = [p for p in PERIOD_ORDER if p in df.columns]
+    df["Daily total"] = df[periods].sum(axis=1)
+    return add_total_row(df).sort_values("SuperZone", key=sz_sort_key, ignore_index=True)
+
+
+def sz_pass_per_car(store: MatrixStore, sz_map: dict) -> pd.DataFrame:
+    drv = add_total_row(demand5_origin_by_sz(store, ["Driver"], sz_map)).set_index("SuperZone")
+    pas = add_total_row(demand5_origin_by_sz(store, ["Passenger"], sz_map)).set_index("SuperZone")
+    pas = pas.reindex(drv.index).fillna(0.0)
+    out = pd.DataFrame(index=drv.index)
+    out["Drivers (day)"] = drv.sum(axis=1).astype(float)
+    out["Car passengers (day)"] = pas.sum(axis=1).astype(float)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        for p in [p for p in PERIOD_ORDER if p in drv.columns]:
+            d, x = drv[p].astype(float), pas[p].astype(float)
+            out[f"Pass per car {p}"] = np.where(d > 0, (d + x) / d, np.nan)
+        d, x = out["Drivers (day)"], out["Car passengers (day)"]
+        out["Pass per car (day)"] = np.where(d > 0, (d + x) / d, np.nan)
+    return out.reset_index().sort_values("SuperZone", key=sz_sort_key, ignore_index=True)
+
+
+def sz_mode_totals(store: MatrixStore, sz_map: dict) -> pd.DataFrame:
+    def day_total(labels, name):
+        df = demand5_origin_by_sz(store, labels, sz_map).set_index("SuperZone")
+        return df.sum(axis=1).rename(name)
+
+    out = pd.concat([day_total(["Driver"], "Drivers"),
+                     day_total(["Passenger"], "Car passengers"),
+                     day_total(["Transit", "P&R", "K&R"], "Transit passengers")],
+                    axis=1).fillna(0.0).reset_index()
+    return add_total_row(out).sort_values("SuperZone", key=sz_sort_key, ignore_index=True)
+
+
 def superzone_matrix(store: MatrixStore, period: str, stem: str, label: str,
                      sz_of_zone: dict):
     m = store.mats.get((period, stem, label))
@@ -866,6 +951,49 @@ def main():
                        tours_per_capita_by_superzone(store_b, taz_b, sz_of_zone),
                        tours_per_capita_by_superzone(store_u, taz_u, sz_of_zone),
                        ["SuperZone"], start_row=3, precise=True)
+
+    # ---- SZ_new super-zone analysis ------------------------------------------
+    sznew_b, sznew_u = sz_new_map(taz_b), sz_new_map(taz_u)
+
+    ws = w.sheet("SZ Motorization")
+    ws.write(0, 0, "Population, cars and motorization by super zone "
+                   "(SZ_new from TAZ_North3.csv)", w.f_title)
+    ws.write(1, 0, "Motorization = cars / population * 1000.", w.f_note)
+    w.write_comparison(ws, sz_motorization(taz_b), sz_motorization(taz_u),
+                       ["SuperZone"], start_row=3, precise=True)
+
+    ws = w.sheet("SZ Transit Boardings")
+    ws.write(0, 0, "Transit boardings by super zone (SZ_new) and period", w.f_title)
+    for i, n in enumerate([
+        "Transit demand (Transit + P&R + K&R, mat/<period>/Demand5) summed by origin "
+        "zone and aggregated to SZ_new super zones - i.e. boardings without transfers.",
+        "Boardings by transit mode are only reported network-wide (Boarding.rep - see "
+        "the Boarding sheet); no zone-level mode split exists in the model outputs, "
+        "so only total transit boardings are shown per super zone.",
+        "EXT = external station zones (not listed in TAZ_North3.csv).",
+    ]):
+        ws.write(1 + i, 0, n, w.f_note)
+    w.write_comparison(ws, sz_transit_boardings(store_b, sznew_b),
+                       sz_transit_boardings(store_u, sznew_u),
+                       ["SuperZone"], start_row=5)
+
+    ws = w.sheet("SZ Pass per Car")
+    ws.write(0, 0, "Passengers per car by super zone (SZ_new)", w.f_title)
+    ws.write(1, 0, "Passengers per car = (drivers + car passengers) / drivers, from the "
+                   "Demand5 Driver and Passenger matrices by origin super zone; "
+                   "(day) = AM+OP+PM+NE.", w.f_note)
+    w.write_comparison(ws, sz_pass_per_car(store_b, sznew_b),
+                       sz_pass_per_car(store_u, sznew_u),
+                       ["SuperZone"], start_row=3, precise=True)
+
+    ws = w.sheet("SZ Mode Totals")
+    ws.write(0, 0, "Drivers, car passengers and transit passengers by super zone (SZ_new)",
+             w.f_title)
+    ws.write(1, 0, "Daily totals (AM+OP+PM+NE) by origin super zone from Demand5; "
+                   "transit = Transit + P&R + K&R.", w.f_note)
+    w.write_comparison(ws, sz_mode_totals(store_b, sznew_b),
+                       sz_mode_totals(store_u, sznew_u),
+                       ["SuperZone"], start_row=3)
 
     # ---- TAZ ---------------------------------------------------------------------
     num_cols = [c for c in taz_b.columns if c != "TAZ" and pd.api.types.is_numeric_dtype(taz_b[c])]
