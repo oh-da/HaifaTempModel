@@ -770,6 +770,35 @@ def sz_mode_totals(store: MatrixStore, sz_map: dict) -> pd.DataFrame:
     return add_total_row(out).sort_values("SuperZone", key=sz_sort_key, ignore_index=True)
 
 
+def sz_mode_split_by_period(store: MatrixStore, sz_map: dict) -> pd.DataFrame:
+    """One row per super zone x period (incl. Daily and TOTAL): drivers,
+    car passengers and transit passengers plus their mode shares."""
+    parts = {"Drivers": ["Driver"],
+             "Car passengers": ["Passenger"],
+             "Transit passengers": ["Transit", "P&R", "K&R"]}
+    frames = {}
+    for name, labels in parts.items():
+        df = add_total_row(demand5_origin_by_sz(store, labels, sz_map)).set_index("SuperZone")
+        df["Daily"] = df.sum(axis=1)
+        frames[name] = df
+    idx = frames["Drivers"].index
+    frames = {name: f.reindex(idx).fillna(0.0) for name, f in frames.items()}
+    zones = sorted([z for z in idx if z != "TOTAL"],
+                   key=lambda x: int(x) if str(x).isdigit() else 9998) + ["TOTAL"]
+    periods = [p for p in PERIOD_ORDER if p in frames["Drivers"].columns] + ["Daily"]
+    rows = []
+    for sz in zones:
+        for per in periods:
+            row = {"SuperZone": sz, "Period": per}
+            for name in parts:
+                row[name] = float(frames[name].loc[sz, per])
+            tot = sum(row[name] for name in parts)
+            for name in parts:
+                row[f"{name} %"] = row[name] / tot * 100.0 if tot > 0 else np.nan
+            rows.append(row)
+    return pd.DataFrame(rows)
+
+
 def superzone_matrix(store: MatrixStore, period: str, stem: str, label: str,
                      sz_of_zone: dict):
     m = store.mats.get((period, stem, label))
@@ -1000,6 +1029,20 @@ def main():
     w.write_comparison(ws, sz_mode_totals(store_b, sznew_b),
                        sz_mode_totals(store_u, sznew_u),
                        ["SuperZone"], start_row=3)
+
+    ws = w.sheet("SZ Mode Split by Period")
+    ws.write(0, 0, "Mode split by super zone "
+                   f"({SZ_COLUMN}) and time of day", w.f_title)
+    for i, n in enumerate([
+        "Drivers, car passengers and transit passengers (Transit + P&R + K&R) from "
+        "Demand5 by origin super zone, per period; Daily = AM+OP+PM+NE.",
+        "'%' columns = mode share of the three modes in that super zone and period "
+        "(row sums to 100).",
+    ]):
+        ws.write(1 + i, 0, n, w.f_note)
+    w.write_comparison(ws, sz_mode_split_by_period(store_b, sznew_b),
+                       sz_mode_split_by_period(store_u, sznew_u),
+                       ["SuperZone", "Period"], start_row=4, precise=True)
 
     # ---- TAZ ---------------------------------------------------------------------
     num_cols = [c for c in taz_b.columns if c != "TAZ" and pd.api.types.is_numeric_dtype(taz_b[c])]
