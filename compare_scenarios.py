@@ -8,9 +8,10 @@ update, 2001 = after data update) and writes Excel comparison workbooks:
   comparison/Comparison_Report.xlsx  - summary, file inventory, all report
                                        tables (Trip/Car/Transit/Boarding/
                                        Cordon), matrix totals, input files,
-                                       super-zone (SZ_new) analysis: motor-
-                                       ization, transit boardings, passengers
-                                       per car and mode totals.
+                                       super-zone analysis (grouping column
+                                       set by SZ_COLUMN below): motorization,
+                                       transit boardings, passengers per car
+                                       and mode totals.
   comparison/Matrix_Details.xlsx     - per-zone origin/destination totals for
                                        every demand matrix and every period,
                                        plus super-zone O/D matrices for the
@@ -51,6 +52,11 @@ RAW = ROOT / "raw"
 OUT = ROOT / "comparison"
 
 PERIOD_ORDER = ["AM", "OP", "PM", "NE"]
+
+# TAZ_North3.csv column that assigns each TAZ to a super zone, used by the
+# "SZ ..." analysis sheets (motorization, transit boardings, pass per car,
+# mode totals). Change here if your TAZ file names the column differently.
+SZ_COLUMN = "SZ_new"
 MAT_PERIOD_DIRS = {"am": "AM", "op": "OP", "pm": "PM", "eve": "NE"}
 
 REPORT_FILES = ["Trip.rep", "Car.rep", "Transit.rep", "Boarding.rep", "Cordon.rep"]
@@ -688,7 +694,7 @@ def sz_sort_key(s: pd.Series):
 
 
 def sz_new_map(taz: pd.DataFrame) -> dict:
-    return {str(int(r.TAZ)): str(int(r.SZ_new)) for r in taz.itertuples()}
+    return {str(int(t)): str(int(s)) for t, s in zip(taz["TAZ"], taz[SZ_COLUMN])}
 
 
 def add_total_row(df: pd.DataFrame, key_col: str = "SuperZone") -> pd.DataFrame:
@@ -698,7 +704,7 @@ def add_total_row(df: pd.DataFrame, key_col: str = "SuperZone") -> pd.DataFrame:
 
 
 def sz_motorization(taz: pd.DataFrame) -> pd.DataFrame:
-    agg = (taz.assign(SuperZone=taz["SZ_new"].astype(int).astype(str))
+    agg = (taz.assign(SuperZone=taz[SZ_COLUMN].astype(int).astype(str))
            .groupby("SuperZone", as_index=False)[["population", "car"]].sum()
            .rename(columns={"population": "Population", "car": "Cars"}))
     agg = add_total_row(agg)
@@ -711,7 +717,7 @@ def sz_motorization(taz: pd.DataFrame) -> pd.DataFrame:
 
 
 def demand5_origin_by_sz(store: MatrixStore, labels, sz_map: dict) -> pd.DataFrame:
-    """SuperZone (SZ_new) x period origin sums of the Demand5 matrices in `labels`."""
+    """Super zone (SZ_COLUMN) x period origin sums of the Demand5 matrices in `labels`."""
     out = {}
     for period in PERIOD_ORDER:
         zones = store.zones.get((period, "Demand5"))
@@ -952,21 +958,21 @@ def main():
                        tours_per_capita_by_superzone(store_u, taz_u, sz_of_zone),
                        ["SuperZone"], start_row=3, precise=True)
 
-    # ---- SZ_new super-zone analysis ------------------------------------------
+    # ---- super-zone (SZ_COLUMN) analysis ------------------------------------------
     sznew_b, sznew_u = sz_new_map(taz_b), sz_new_map(taz_u)
 
     ws = w.sheet("SZ Motorization")
     ws.write(0, 0, "Population, cars and motorization by super zone "
-                   "(SZ_new from TAZ_North3.csv)", w.f_title)
+                   f"({SZ_COLUMN} from TAZ_North3.csv)", w.f_title)
     ws.write(1, 0, "Motorization = cars / population * 1000.", w.f_note)
     w.write_comparison(ws, sz_motorization(taz_b), sz_motorization(taz_u),
                        ["SuperZone"], start_row=3, precise=True)
 
     ws = w.sheet("SZ Transit Boardings")
-    ws.write(0, 0, "Transit boardings by super zone (SZ_new) and period", w.f_title)
+    ws.write(0, 0, f"Transit boardings by super zone ({SZ_COLUMN}) and period", w.f_title)
     for i, n in enumerate([
         "Transit demand (Transit + P&R + K&R, mat/<period>/Demand5) summed by origin "
-        "zone and aggregated to SZ_new super zones - i.e. boardings without transfers.",
+        f"zone and aggregated to {SZ_COLUMN} super zones - i.e. boardings without transfers.",
         "Boardings by transit mode are only reported network-wide (Boarding.rep - see "
         "the Boarding sheet); no zone-level mode split exists in the model outputs, "
         "so only total transit boardings are shown per super zone.",
@@ -978,7 +984,7 @@ def main():
                        ["SuperZone"], start_row=5)
 
     ws = w.sheet("SZ Pass per Car")
-    ws.write(0, 0, "Passengers per car by super zone (SZ_new)", w.f_title)
+    ws.write(0, 0, f"Passengers per car by super zone ({SZ_COLUMN})", w.f_title)
     ws.write(1, 0, "Passengers per car = (drivers + car passengers) / drivers, from the "
                    "Demand5 Driver and Passenger matrices by origin super zone; "
                    "(day) = AM+OP+PM+NE.", w.f_note)
@@ -987,8 +993,8 @@ def main():
                        ["SuperZone"], start_row=3, precise=True)
 
     ws = w.sheet("SZ Mode Totals")
-    ws.write(0, 0, "Drivers, car passengers and transit passengers by super zone (SZ_new)",
-             w.f_title)
+    ws.write(0, 0, "Drivers, car passengers and transit passengers by super zone "
+                   f"({SZ_COLUMN})", w.f_title)
     ws.write(1, 0, "Daily totals (AM+OP+PM+NE) by origin super zone from Demand5; "
                    "transit = Transit + P&R + K&R.", w.f_note)
     w.write_comparison(ws, sz_mode_totals(store_b, sznew_b),
